@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 interface AnalysisResult {
-  predicted_class: string
+  predicted_class: number | string
   confidence: number
   probabilities: {
-    CANDIDATE: number
-    CONFIRMED: number
-    "FALSE POSITIVE": number
+    "0": number
+    "1": number
+    "2": number
   }
   timestamp: string
 }
@@ -38,6 +38,29 @@ export default function ExplorePage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Function to convert numeric class to readable label
+  const getClassLabel = (predictedClass: number | string): string => {
+    const classMap: { [key: string]: string } = {
+      "0": "FALSE POSITIVE",
+      "1": "CONFIRMED",
+      "2": "CANDIDATE"
+    }
+    return classMap[String(predictedClass)] || String(predictedClass)
+  }
+
+  // Function to get color based on class
+  const getClassColor = (predictedClass: number | string): string => {
+    const colorMap: { [key: string]: string } = {
+      "0": "text-red-400",
+      "1": "text-green-400",
+      "2": "text-yellow-400",
+      "FALSE POSITIVE": "text-red-400",
+      "CONFIRMED": "text-green-400",
+      "CANDIDATE": "text-yellow-400"
+    }
+    return colorMap[String(predictedClass)] || "text-white"
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -52,7 +75,7 @@ export default function ExplorePage() {
     setError(null)
 
     try {
-      const response = await fetch("/api/analyze", {
+      const response = await fetch("https://smart-telescope.onrender.com/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -330,7 +353,9 @@ export default function ExplorePage() {
                     {/* Predicted Class */}
                     <div className="rounded-md bg-black/40 p-3">
                       <p className="text-sm font-semibold uppercase tracking-wide text-cyan-400">Predicted Class</p>
-                      <p className="mt-1 text-xl font-bold text-white">{result.predicted_class}</p>
+                      <p className={`mt-1 text-xl font-bold ${getClassColor(result.predicted_class)}`}>
+                        {getClassLabel(result.predicted_class)}
+                      </p>
                     </div>
 
                     {/* Confidence */}
@@ -344,21 +369,21 @@ export default function ExplorePage() {
                       <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-cyan-400">Probabilities</p>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-white">Candidate:</span>
-                          <span className="font-bold text-white">
-                            {(result.probabilities.CANDIDATE * 100).toFixed(2)}%
+                          <span className="text-white">False Positive:</span>
+                          <span className="font-bold text-red-400">
+                            {(result.probabilities["0"] * 100).toFixed(2)}%
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-white">Confirmed:</span>
-                          <span className="font-bold text-white">
-                            {(result.probabilities.CONFIRMED * 100).toFixed(2)}%
+                          <span className="font-bold text-green-400">
+                            {(result.probabilities["1"] * 100).toFixed(2)}%
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-white">False Positive:</span>
-                          <span className="font-bold text-white">
-                            {(result.probabilities["FALSE POSITIVE"] * 100).toFixed(2)}%
+                          <span className="text-white">Candidate:</span>
+                          <span className="font-bold text-yellow-400">
+                            {(result.probabilities["2"] * 100).toFixed(2)}%
                           </span>
                         </div>
                       </div>
