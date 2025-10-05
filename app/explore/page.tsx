@@ -9,6 +9,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+interface AnalysisResult {
+  predicted_class: string
+  confidence: number
+  probabilities: {
+    CANDIDATE: number
+    CONFIRMED: number
+    "FALSE POSITIVE": number
+  }
+  timestamp: string
+}
+
 export default function ExplorePage() {
   const [formData, setFormData] = useState({
     koi_score: "",
@@ -23,7 +34,8 @@ export default function ExplorePage() {
     koi_model_snr: "",
   })
 
-  const [result, setResult] = useState<string | null>(null)
+  const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,6 +49,7 @@ export default function ExplorePage() {
     e.preventDefault()
     setIsLoading(true)
     setResult(null)
+    setError(null)
 
     try {
       const response = await fetch("/api/analyze", {
@@ -48,10 +61,15 @@ export default function ExplorePage() {
       })
 
       const data = await response.json()
-      setResult(data.result)
+
+      if (data.error) {
+        setError(data.error)
+      } else {
+        setResult(data.result)
+      }
     } catch (error) {
       console.error("Error:", error)
-      setResult("Error processing data. Please try again.")
+      setError("Error processing data. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -304,11 +322,61 @@ export default function ExplorePage() {
                 </Button>
               </div>
 
-              {/* Result Display */}
               {result && (
                 <div className="mt-6 rounded-lg border border-cyan-500/30 bg-black/60 p-4 sm:p-6">
-                  <h2 className="mb-3 text-lg font-bold text-cyan-300 sm:text-xl">Analysis Result:</h2>
-                  <p className="text-base text-white sm:text-lg">{result}</p>
+                  <h2 className="mb-4 text-lg font-bold text-cyan-300 sm:text-xl">Analysis Result:</h2>
+
+                  <div className="space-y-4">
+                    {/* Predicted Class */}
+                    <div className="rounded-md bg-black/40 p-3">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-cyan-400">Predicted Class</p>
+                      <p className="mt-1 text-xl font-bold text-white">{result.predicted_class}</p>
+                    </div>
+
+                    {/* Confidence */}
+                    <div className="rounded-md bg-black/40 p-3">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-cyan-400">Confidence</p>
+                      <p className="mt-1 text-xl font-bold text-white">{(result.confidence * 100).toFixed(2)}%</p>
+                    </div>
+
+                    {/* Probabilities */}
+                    <div className="rounded-md bg-black/40 p-3">
+                      <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-cyan-400">Probabilities</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white">Candidate:</span>
+                          <span className="font-bold text-white">
+                            {(result.probabilities.CANDIDATE * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white">Confirmed:</span>
+                          <span className="font-bold text-white">
+                            {(result.probabilities.CONFIRMED * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white">False Positive:</span>
+                          <span className="font-bold text-white">
+                            {(result.probabilities["FALSE POSITIVE"] * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timestamp */}
+                    <div className="rounded-md bg-black/40 p-3">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-cyan-400">Analysis Time</p>
+                      <p className="mt-1 text-sm text-gray-300">{new Date(result.timestamp).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-6 rounded-lg border border-red-500/30 bg-red-900/20 p-4 sm:p-6">
+                  <h2 className="mb-3 text-lg font-bold text-red-400 sm:text-xl">Error:</h2>
+                  <p className="text-base text-white sm:text-lg">{error}</p>
                 </div>
               )}
             </form>
@@ -348,6 +416,14 @@ export default function ExplorePage() {
                 className="text-base font-bold uppercase tracking-wider transition-colors hover:text-cyan-400 sm:text-lg"
               >
                 Contact
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/visualizations"
+                className="text-base font-bold uppercase tracking-wider transition-colors hover:text-cyan-400 sm:text-lg"
+              >
+                Visualizations
               </Link>
             </li>
           </ul>

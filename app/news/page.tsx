@@ -105,6 +105,14 @@ export default function News() {
                 Contact
               </Link>
             </li>
+            <li>
+              <Link
+                href="/visualizations"
+                className="text-base font-bold uppercase tracking-wider transition-colors hover:text-cyan-400 sm:text-lg"
+              >
+                Visualizations
+              </Link>
+            </li>
           </ul>
         </nav>
       </div>
